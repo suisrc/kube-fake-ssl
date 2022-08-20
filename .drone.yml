@@ -71,31 +71,3 @@ name: docker_password
 get:
   path: drone-docker
   name: password
-
----
-kind: secret
-name: k8s_token
-get:
-  path: drone-k8s
-  name: token
-
----
-kind: secret
-name: docker_ali_username
-get:
-  path: drone-docker-ali
-  name: username
-
----
-kind: secret
-name: docker_ali_password
-get:
-  path: drone-docker-ali
-  name: password
-
----
-kind: secret
-name: k8s_ali_token
-get:
-  path: drone-k8s-ali-bate
-  name: token
