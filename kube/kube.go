@@ -1,6 +1,8 @@
 package kube
 
 import (
+	"io/ioutil"
+
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -35,4 +37,10 @@ func CreateClient() (kubernetes.Interface, error) {
 	}
 
 	return kubernetes.NewForConfig(config)
+}
+
+// 获取当前命名空间
+func CurrentNamespace() string {
+	namespace, _ := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+	return string(namespace)
 }
