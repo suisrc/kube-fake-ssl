@@ -71,7 +71,7 @@ func CreateCA(config CertConfig /*, notAfter time.Time*/) (SignResult, error) {
 	if err != nil {
 		return SignResult{}, nil
 	}
-	crtBytes := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICAET", Bytes: derBytes})
+	crtBytes := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
 	keyBytes := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(pkey)})
 
 	return SignResult{Crt: string(crtBytes), Key: string(keyBytes)}, nil
@@ -157,7 +157,7 @@ func CreateCert(config CertConfig, commonName, profileKey string, dns, ips []str
 	if err != nil {
 		return SignResult{}, nil
 	}
-	crtBytes := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICAET", Bytes: derBytes})
+	crtBytes := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: derBytes})
 	keyBytes := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(pkey)})
 
 	return SignResult{Crt: string(crtBytes), Key: string(keyBytes)}, nil
