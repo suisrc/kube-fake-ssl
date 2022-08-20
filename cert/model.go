@@ -1,5 +1,7 @@
 package cert
 
+import "encoding/json"
+
 type CertConfig struct {
 	CommonName   string                 `json:"CN"`
 	SignKey      SignKey                `json:"key"`
@@ -37,10 +39,20 @@ type SignResult struct {
 
 // 合并配置
 func (aa *CertConfig) Merge(bb CertConfig) bool {
-	return false
+	update := false
+	if bb.SignKey.Size > 0 && bb.SignKey.Size != aa.SignKey.Size {
+		aa.SignKey.Size = bb.SignKey.Size
+		update = true
+	}
+	for bKey, bVal := range bb.SignProfiles {
+		aa.SignProfiles[bKey] = bVal
+		update = true
+	}
+	return update
 }
 
 // String
 func (aa *CertConfig) String() string {
-	return ""
+	str, _ := json.Marshal(aa)
+	return string(str)
 }
