@@ -27,12 +27,12 @@ func CreateCaCmdApi(ctx *gin.Context) {
 		return
 	}
 	infoKey := fmt.Sprintf("%s%s-%s", PK, co.Key, "info")
-	info, err := cli.CoreV1().Secrets("").Get(ctx, infoKey, metav1.GetOptions{})
+	info, err := cli.CoreV1().Secrets(kube.CurrentNamespace()).Get(ctx, infoKey, metav1.GetOptions{})
 	if err != nil {
 		serve.Error(ctx, 500, "KUBE-INFO-ERROR", err.Error())
 		return
 	}
-	if co.Token != info.StringData["token"] { // 必须存在，不存在，不可访问
+	if tkn, ok := info.Data["token"]; ok && string(tkn) != co.Token { // 必须存在，不存在，不可访问
 		serve.Error(ctx, 400, "TOKEN-ERROR", "token error")
 		return
 	}
@@ -44,17 +44,17 @@ func CreateCaCmdApi(ctx *gin.Context) {
 		return
 	}
 
-	if configStr, ok := info.StringData["config"]; ok { // 配置已经存在
+	if configStr, ok := info.Data["config"]; ok { // 配置已经存在
 		//=======================================================================
 		config2 := cert.CertConfig{}
-		if err := json.Unmarshal([]byte(configStr), &config2); err != nil {
+		if err := json.Unmarshal(configStr, &config2); err != nil {
 			serve.Error(ctx, 500, "KUBE-CONFIG-ERROR", err.Error())
 			return
 		}
 		// 合并配置, 更新配置
 		if update := config2.Merge(config); update {
-			info.StringData["config"] = config2.String()
-			info, err = cli.CoreV1().Secrets("").Update(ctx, info, metav1.UpdateOptions{})
+			info.Data["config"] = []byte(config2.String())
+			info, err = cli.CoreV1().Secrets(kube.CurrentNamespace()).Update(ctx, info, metav1.UpdateOptions{})
 			if err != nil {
 				serve.Error(ctx, 500, "KUBE-UPDATE-ERROR", err.Error())
 				return
@@ -62,16 +62,16 @@ func CreateCaCmdApi(ctx *gin.Context) {
 		}
 		config = config2
 	} else { // 配置不存在
-		info.StringData["config"] = config.String()
-		info, err = cli.CoreV1().Secrets("").Update(ctx, info, metav1.UpdateOptions{})
+		info.Data["config"] = []byte(config.String())
+		info, err = cli.CoreV1().Secrets(kube.CurrentNamespace()).Update(ctx, info, metav1.UpdateOptions{})
 		if err != nil {
 			serve.Error(ctx, 500, "KUBE-UPDATE-ERROR", err.Error())
 			return
 		}
 	}
 	// ==========================================================================
-	if crt, ok := info.StringData["ca.crt"]; ok {
-		serve.Success(ctx, crt)
+	if crt, ok := info.Data["ca.crt"]; ok {
+		serve.Success(ctx, string(crt))
 		return // 证书已经存在，立即返回
 	}
 	// 证书不存在，需要重写构建证书
@@ -81,12 +81,12 @@ func CreateCaCmdApi(ctx *gin.Context) {
 		return
 	}
 	// ==========================================================================
-	info.StringData["ca.crt"] = ca.Crt
-	info.StringData["ca.key"] = ca.Key
+	info.Data["ca.crt"] = []byte(ca.Crt)
+	info.Data["ca.key"] = []byte(ca.Key)
 	// 求ca.Key的md5值
 	md5CaKey, _ := hashMd5([]byte(ca.Key))
-	info.StringData["prefix"] = fmt.Sprintf("%s%s-%s-", PK, co.Key, md5CaKey[:8])
-	info, err = cli.CoreV1().Secrets("").Update(ctx, info, metav1.UpdateOptions{})
+	info.Data["prefix"] = []byte(fmt.Sprintf("%s%s-%s-", PK, co.Key, md5CaKey[:8]))
+	_, err = cli.CoreV1().Secrets(kube.CurrentNamespace()).Update(ctx, info, metav1.UpdateOptions{})
 	if err != nil {
 		serve.Error(ctx, 500, "KUBE-UPDATE-ERROR", err.Error())
 		return

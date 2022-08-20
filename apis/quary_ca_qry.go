@@ -20,15 +20,15 @@ func QuaryCaQryApi(ctx *gin.Context) {
 		return
 	}
 	infoKey := fmt.Sprintf("%s%s-%s", PK, co.Key, "info")
-	info, err := cli.CoreV1().Secrets("").Get(ctx, infoKey, metav1.GetOptions{})
+	info, err := cli.CoreV1().Secrets(kube.CurrentNamespace()).Get(ctx, infoKey, metav1.GetOptions{})
 	if err != nil {
 		serve.Error(ctx, 500, "KUBE-INFO-ERROR", err.Error())
 		return
 	}
-	crt, ok := info.StringData["ca.crt"]
+	crt, ok := info.Data["ca.crt"]
 	if !ok {
 		serve.Error(ctx, 200, "CA-NOT-FOUND", "CA证书不存在")
 		return
 	}
-	serve.Success(ctx, crt)
+	serve.Success(ctx, string(crt))
 }

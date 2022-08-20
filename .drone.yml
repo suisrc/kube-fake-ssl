@@ -1,0 +1,101 @@
+
+kind: pipeline
+type: kubernetes
+name: default
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+###########################################################################################
+# 构建应用
+
+- name: build
+  image: golang:1.18-buster
+  commands:
+  - go env -w GO111MODULE=on &&
+    go env -w GOPROXY=http://mvn.res.local/repository/go,direct &&
+    go build -ldflags "-w -s" -o ./bin/runner .
+  when:
+    branch:
+    - deploy-auto
+    event:
+    - push
+
+
+# 构建镜像并推送
+- name: publish
+  image: docker:19.03.6
+  # pull: always
+  environment:
+    PLUGIN_USERNAME:
+      from_secret: docker_username
+    PLUGIN_PASSWORD:
+      from_secret: docker_password
+    DOCKER_HOST: tcp://docker:2375
+    PLUGIN_REGISTRY: dcr.dev.sims-cn.com
+    PLUGIN_REPO: plus/fkssl:v1.0.${DRONE_BUILD_NUMBER}
+  commands: 
+    - docker version &&
+      docker build --rm=true -f docker/Dockerfile -t $PLUGIN_REGISTRY/$PLUGIN_REPO ./docker &&
+      docker login -u $PLUGIN_USERNAME -p $PLUGIN_PASSWORD $PLUGIN_REGISTRY &&
+      docker push $PLUGIN_REGISTRY/$PLUGIN_REPO &&
+      docker rmi  $PLUGIN_REGISTRY/$PLUGIN_REPO
+      # docker system prune -f
+  when:
+    branch:
+    - deploy-auto
+    event:
+    - push
+
+###########################################################################################
+#https://docs.drone.io/pipeline/kubernetes/syntax/trigger/
+trigger:
+  branch:
+  - deploy-auto
+  event:
+  - push
+  - promote
+
+---
+kind: secret
+name: docker_username
+get:
+  path: drone-docker
+  name: username
+
+---
+kind: secret
+name: docker_password
+get:
+  path: drone-docker
+  name: password
+
+---
+kind: secret
+name: k8s_token
+get:
+  path: drone-k8s
+  name: token
+
+---
+kind: secret
+name: docker_ali_username
+get:
+  path: drone-docker-ali
+  name: username
+
+---
+kind: secret
+name: docker_ali_password
+get:
+  path: drone-docker-ali
+  name: password
+
+---
+kind: secret
+name: k8s_ali_token
+get:
+  path: drone-k8s-ali-bate
+  name: token

@@ -34,14 +34,14 @@ func QurayCertCmdApi(ctx *gin.Context) {
 		return
 	}
 	// ==========================================================================
-	info, err := cli.CoreV1().Secrets("").Get(ctx, fmt.Sprintf("%s%s-%s", PK, co.Key, "info"), metav1.GetOptions{})
+	info, err := cli.CoreV1().Secrets(kube.CurrentNamespace()).Get(ctx, fmt.Sprintf("%s%s-%s", PK, co.Key, "info"), metav1.GetOptions{})
 	if err != nil {
 		serve.Error(ctx, 500, "KUBE-INFO-ERROR", err.Error())
 		return
 	}
-	secretKey, ok := info.StringData["prefix"]
-	if !ok {
-		secretKey = fmt.Sprintf("%s%s-", PK, co.Key)
+	secretKey := fmt.Sprintf("%s%s-", PK, co.Key)
+	if bts, ok := info.Data["prefix"]; ok {
+		secretKey = string(bts)
 	}
 	if len(co.Domains) == 1 {
 		secretKey += co.Domains[0]
@@ -51,39 +51,43 @@ func QurayCertCmdApi(ctx *gin.Context) {
 		secretKey += md5Domains
 	}
 
-	domain, err := cli.CoreV1().Secrets("").Get(ctx, secretKey, metav1.GetOptions{})
+	domain, err := cli.CoreV1().Secrets(kube.CurrentNamespace()).Get(ctx, secretKey, metav1.GetOptions{})
 	if err == nil {
-		serve.Success(ctx, gin.H{
-			"crt": domain.StringData["pem.crt"],
-			"key": domain.StringData["pem.key"],
-		})
-		return
+		if ok, _ := cert.IsExpired(string(domain.Data["pem.crt"])); !ok {
+			serve.Success(ctx, gin.H{
+				"crt": string(domain.Data["pem.crt"]),
+				"key": string(domain.Data["pem.key"]),
+			})
+			return
+		}
+		// 证书出现问题或者过期
 	}
 	// ==========================================================================
 	// domain对应的cert不存在，重写生成cert
 	dns := []string{} // 域名
 	ips := []string{}
+	reg, _ := regexp.Compile(`^(\d{1,3}\.){3}\d{1,3}$`)
 	for _, domain := range co.Domains {
 		// 正则表达式匹配IP， 暂时支持ipv4
-		if ok, _ := regexp.MatchString(`^(\d{1,3}\.){3}\d{1,3}$`, domain); ok {
+		if ok := reg.MatchString(domain); ok {
 			ips = append(ips, domain) // ipv4
 		} else {
 			dns = append(dns, domain) // 域名
 		}
 	}
-	configStr, ok0 := info.StringData["config"]
-	caCrt, ok1 := info.StringData["ca.crt"]
-	caKey, ok2 := info.StringData["ca.key"]
+	configBts, ok0 := info.Data["config"]
+	caCrt, ok1 := info.Data["ca.crt"]
+	caKey, ok2 := info.Data["ca.key"]
 	if !ok0 || !ok1 || !ok2 {
 		serve.Error(ctx, 200, "CA-NOT-FOUND", "CA证书不存在")
 		return
 	}
 	config := cert.CertConfig{}
-	if err := json.Unmarshal([]byte(configStr), &config); err != nil {
+	if err := json.Unmarshal(configBts, &config); err != nil {
 		serve.Error(ctx, 500, "KUBE-CONFIG-ERROR", err.Error())
 		return
 	}
-	subCert, err := cert.CreateCert(config, co.CommonName, co.Profile, dns, ips, caCrt, caKey)
+	subCert, err := cert.CreateCert(config, co.CommonName, co.Profile, dns, ips, string(caCrt), string(caKey))
 	if err != nil {
 		serve.Error(ctx, 500, "KUBE-CERT-ERROR", err.Error())
 		return
@@ -100,7 +104,7 @@ func QurayCertCmdApi(ctx *gin.Context) {
 			"domains": strings.Join(co.Domains, ","),
 		},
 	}
-	if _, err := cli.CoreV1().Secrets("").Create(ctx, domain, metav1.CreateOptions{}); err != nil {
+	if _, err := cli.CoreV1().Secrets(kube.CurrentNamespace()).Create(ctx, domain, metav1.CreateOptions{}); err != nil {
 		serve.Error(ctx, 500, "KUBE-CREATE-ERROR", err.Error())
 		return
 	}

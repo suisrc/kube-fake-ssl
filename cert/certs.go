@@ -86,6 +86,24 @@ func CreateCert(config CertConfig, commonName, profileKey string, dns, ips []str
 	if !ok {
 		return SignResult{}, fmt.Errorf("no profile: %s", profileKey)
 	}
+
+	caCrtBlk, _ := pem.Decode([]byte(caCrtPem))
+	if caCrtBlk == nil {
+		return SignResult{}, fmt.Errorf("invalid ca.crt, pem")
+	}
+	caCrt, err := x509.ParseCertificate(caCrtBlk.Bytes)
+	if err != nil {
+		return SignResult{}, fmt.Errorf("invalid ca.crt, bytes")
+	}
+	caKeyBlk, _ := pem.Decode([]byte(caKeyPem))
+	if caKeyBlk == nil {
+		return SignResult{}, fmt.Errorf("invalid ca.key, pem")
+	}
+	caKey, err := x509.ParsePKCS1PrivateKey(caKeyBlk.Bytes)
+	if err != nil {
+		return SignResult{}, fmt.Errorf("invalid ca.key, bytes")
+	}
+
 	if commonName == "" {
 		commonName = config.CommonName
 	}
@@ -135,23 +153,6 @@ func CreateCert(config CertConfig, commonName, profileKey string, dns, ips []str
 		SignatureAlgorithm: algorithm,
 	}
 
-	caBlk, caCrtBytes := pem.Decode([]byte(caCrtPem))
-	if caBlk == nil {
-		return SignResult{}, fmt.Errorf("invalid ca.crt, pem")
-	}
-	caCrt, err := x509.ParseCertificate(caCrtBytes)
-	if err != nil {
-		return SignResult{}, fmt.Errorf("invalid ca.crt, bytes")
-	}
-	caBlk, caKeyBytes := pem.Decode([]byte(caKeyPem))
-	if caBlk == nil {
-		return SignResult{}, fmt.Errorf("invalid ca.key, pem")
-	}
-	caKey, err := x509.ParsePKCS1PrivateKey(caKeyBytes)
-	if err != nil {
-		return SignResult{}, fmt.Errorf("invalid ca.key, bytes")
-	}
-
 	derBytes, err := x509.CreateCertificate(rand.Reader, &pder, caCrt, &pkey.PublicKey, caKey)
 	if err != nil {
 		return SignResult{}, nil
@@ -160,4 +161,21 @@ func CreateCert(config CertConfig, commonName, profileKey string, dns, ips []str
 	keyBytes := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(pkey)})
 
 	return SignResult{Crt: string(crtBytes), Key: string(keyBytes)}, nil
+}
+
+// IsExpired 判定正式否使过期
+func IsExpired(caCrtPem string) (bool, error) {
+	caCrtBlk, _ := pem.Decode([]byte(caCrtPem))
+	if caCrtBlk == nil {
+		return true, fmt.Errorf("invalid ca.crt, pem")
+	}
+	caCrt, err := x509.ParseCertificate(caCrtBlk.Bytes)
+	if err != nil {
+		return true, fmt.Errorf("invalid ca.crt, bytes")
+	}
+
+	if time.Now().After(caCrt.NotAfter) {
+		return true, nil
+	}
+	return false, nil
 }

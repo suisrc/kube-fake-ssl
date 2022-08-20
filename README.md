@@ -22,7 +22,7 @@ GET http://127.0.0.1/healthz
 ### 创建CA
 如果已经存在，返回之前令牌的基本信息+crt&key
 ```rest
-POST http://127.0.0.1/api/ssl/v1/ca/init?token=&key=tst
+POST http://127.0.0.1/api/ssl/v1/ca/init?token=778899&key=tst
 
 {
   "CN": "Kubernetes",
@@ -47,8 +47,8 @@ POST http://127.0.0.1/api/ssl/v1/ca/init?token=&key=tst
         "OU": "CA"
       }
     },
-    "profile1": {
-      "expiry": "876000h",
+    "profile2": {
+      "expiry": "1000h",
       "name": {
         "C": "CN",
         "ST": "Liaoning",
@@ -84,7 +84,7 @@ GET http://127.0.0.1/api/ssl/v1/ca?key=tst
 ### 获取PEM
 PS: domain,domains二选一，domains使用md5存储，不如domain直观; kind=1(如果没有，新增)
 ```rest
-GET http://127.0.0.1/api/ssl/v1/cert?token=&key=tst&domain=[支持多参数]&profile=&kind=1&cn=xxxxx
+GET http://127.0.0.1/api/ssl/v1/cert?token=778899&key=tst&domain=dev1.sims-cn.com&profile=&kind0&cn=dev01
 ```
 {
     success: true,
