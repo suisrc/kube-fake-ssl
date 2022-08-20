@@ -5,6 +5,7 @@
 
 secret所有的key，统一使用fkc-开头 -> fake cert; 因此在该应用空间内的所有内容尽量避免使用改内容。
 PS: 证书过期，如果被调用，会自动删除过期的证书，生产新的证书覆盖，否则过期证书不会被删除 
+    未保证访问安全，需要先在k8s集群中配置key，[fkc-(key)-info]的secret内容，而且必须有token，才可以调用
 
 ## 接口列表
 
@@ -21,32 +22,39 @@ GET http://127.0.0.1/healthz
 ### 创建CA
 如果已经存在，返回之前令牌的基本信息+crt&key
 ```rest
-POST http://127.0.0.1/api/crt/v1/ca/init?token=&name=tst
+POST http://127.0.0.1/api/ssl/v1/ca/init?token=&key=tst
 
 {
   "CN": "Kubernetes",
   "key": {
     "size": 2048
   },
-  "name": {
+  "CA":{
+    "expiry":"175200h",
+    "name": {
       "C": "CN",
       "ST": "Liaoning",
       "L": "Dalian",
       "O": "Kubernetes",
       "OU": "CA"
+    }
   },
-  "signing": {
+  "profiles": {
     "default": {
-      "expiry": "87600h"
+      "expiry": "87600h",
+      "name": {
+        "O": "Kubernetes",
+        "OU": "CA"
+      }
     },
     "profile1": {
       "expiry": "876000h",
       "name": {
-          "C": "CN",
-          "ST": "Liaoning",
-          "L": "Dalian",
-          "O": "Kubernetes",
-          "OU": "CA"
+        "C": "CN",
+        "ST": "Liaoning",
+        "L": "Dalian",
+        "O": "Kubernetes",
+        "OU": "CA"
       }
     }
   }
@@ -65,7 +73,7 @@ POST http://127.0.0.1/api/crt/v1/ca/init?token=&name=tst
 ### 获取CA
 PS: 获取ca内容时候，无需令牌，该内容可以理解为公共内容， 无需健全
 ```rest
-GET http://127.0.0.1/api/crt/v1/ca/init?name=tst
+GET http://127.0.0.1/api/ssl/v1/ca?key=tst
 ```
 {
     success: true,
@@ -76,7 +84,7 @@ GET http://127.0.0.1/api/crt/v1/ca/init?name=tst
 ### 获取PEM
 PS: domain,domains二选一，domains使用md5存储，不如domain直观; kind=1(如果没有，新增)
 ```rest
-GET http://127.0.0.1/api/crt/v1/cert?token=&name=tst&domain=&domains=[h1,h2,h3]&profile=&kind=1
+GET http://127.0.0.1/api/ssl/v1/cert?token=&key=tst&domain=[支持多参数]&profile=&kind=1&cn=xxxxx
 ```
 {
     success: true,
