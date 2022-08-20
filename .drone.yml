@@ -38,7 +38,7 @@ steps:
     PLUGIN_REPO: plus/fkssl:v1.0.${DRONE_BUILD_NUMBER}
   commands: 
     - docker version &&
-      docker build --rm=true -f docker/Dockerfile -t $PLUGIN_REGISTRY/$PLUGIN_REPO ./docker &&
+      docker build --rm=true -f Dockerfile -t $PLUGIN_REGISTRY/$PLUGIN_REPO ./ &&
       docker login -u $PLUGIN_USERNAME -p $PLUGIN_PASSWORD $PLUGIN_REGISTRY &&
       docker push $PLUGIN_REGISTRY/$PLUGIN_REPO &&
       docker rmi  $PLUGIN_REGISTRY/$PLUGIN_REPO

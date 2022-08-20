@@ -63,6 +63,10 @@ func QurayCertCmdApi(ctx *gin.Context) {
 		// 证书出现问题或者过期
 	}
 	// ==========================================================================
+	if co.Kind != 1 {
+		serve.Error(ctx, 400, "KIND-ERROR", "kind is error")
+		return
+	}
 	// domain对应的cert不存在，重写生成cert
 	dns := []string{} // 域名
 	ips := []string{}

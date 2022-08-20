@@ -7,6 +7,7 @@ APP = kube-fake-ssl
 # go env -w GO111MODULE=on
 # go env -w GOPROXY=http://mvn.res.local/repository/go,direct
 # go env -w GOPROXY=https://proxy.golang.com.cn,direct
+# go env -w GOPROXY=https://goproxy.cn,direct
 # go env -w GOSUMDB=sum.golang.google.cn
 # go env -w GOSUMDB=sum.golang.org
 # go env -w GOSUMDB=off
