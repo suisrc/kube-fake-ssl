@@ -27,4 +27,5 @@ run:
 build:
 	go build -ldflags "-w -s" -o $(SERVER_BIN) .
 
-
+deploy:
+	git checkout deploy-auto && git merge master && git push && git checkout master
