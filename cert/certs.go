@@ -8,6 +8,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"math/big"
+	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -78,7 +79,7 @@ func CreateCA(config CertConfig /*, notAfter time.Time*/) (SignResult, error) {
 }
 
 // CreateCertificate 创建一个证书，默认有效期2年
-func CreateCert(config CertConfig, commonName, profileKey string, dns, ips []string, caCrtPem, caKeyPem string) (SignResult, error) {
+func CreateCert(config CertConfig, commonName, profileKey string, dns []string, ips []net.IP, caCrtPem, caKeyPem string) (SignResult, error) {
 	profile, ok := config.SignProfiles[profileKey]
 	if !ok {
 		profile, ok = config.SignProfiles["default"]
@@ -151,6 +152,8 @@ func CreateCert(config CertConfig, commonName, profileKey string, dns, ips []str
 			x509.ExtKeyUsageClientAuth,
 		},
 		SignatureAlgorithm: algorithm,
+		DNSNames:           dns,
+		IPAddresses:        ips,
 	}
 
 	derBytes, err := x509.CreateCertificate(rand.Reader, &pder, caCrt, &pkey.PublicKey, caKey)

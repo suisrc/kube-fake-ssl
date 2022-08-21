@@ -3,7 +3,7 @@ package apis
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
+	"net"
 	"sort"
 	"strings"
 
@@ -69,12 +69,12 @@ func QurayCertCmdApi(ctx *gin.Context) {
 	}
 	// domain对应的cert不存在，重写生成cert
 	dns := []string{} // 域名
-	ips := []string{}
-	reg, _ := regexp.Compile(`^(\d{1,3}\.){3}\d{1,3}$`)
+	ips := []net.IP{}
+	// reg, _ := regexp.Compile(`^(\d{1,3}\.){3}\d{1,3}$`)
 	for _, domain := range co.Domains {
 		// 正则表达式匹配IP， 暂时支持ipv4
-		if ok := reg.MatchString(domain); ok {
-			ips = append(ips, domain) // ipv4
+		if ip := net.ParseIP(domain); ip != nil {
+			ips = append(ips, ip)
 		} else {
 			dns = append(dns, domain) // 域名
 		}

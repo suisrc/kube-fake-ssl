@@ -84,7 +84,7 @@ GET http://127.0.0.1/api/ssl/v1/ca?key=tst
 ### 获取PEM
 PS: domain,domains二选一，domains使用md5存储，不如domain直观; kind=1(如果没有，新增)
 ```rest
-GET http://127.0.0.1/api/ssl/v1/cert?token=778899&key=tst&domain=dev1.sims-cn.com&profile=&kind0&cn=dev01
+GET http://127.0.0.1/api/ssl/v1/cert?token=778899&key=tst&domain=sso.dev1.sims-cn.com&profile=&kind=0&cn=dev01
 ```
 {
     success: true,
