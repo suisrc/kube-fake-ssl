@@ -29,3 +29,6 @@ build:
 
 deploy:
 	git checkout deploy-auto && git merge master && git push && git checkout master
+	
+github:
+	git checkout plus && git merge master && git push -u github && git checkout master

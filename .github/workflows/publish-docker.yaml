@@ -12,7 +12,7 @@ env:
   DOCKER_REGISTRY: docker.io
 
 jobs:
-  build-sidecar:
+  build:
     runs-on: ubuntu-latest
 
     steps:
