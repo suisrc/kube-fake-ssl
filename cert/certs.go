@@ -107,9 +107,9 @@ func CreateCert(config CertConfig, commonName, profileKey string, dns []string, 
 
 	if commonName == "" {
 		if len(dns) == 1 {
-			commonName = dns[1]
+			commonName = dns[0]
 		} else if len(ips) == 1 {
-			commonName = ips[1]
+			commonName = ips[0].String()
 		} else {
 			commonName = config.CommonName
 		}
