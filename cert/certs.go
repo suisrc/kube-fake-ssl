@@ -105,7 +105,13 @@ func CreateCert(config CertConfig, commonName, profileKey string, dns, ips []str
 	}
 
 	if commonName == "" {
-		commonName = config.CommonName
+		if len(dns) == 1 {
+			commonName = dns[1]
+		} else if len(ips) == 1 {
+			commonName = ips[1]
+		} else {
+			commonName = config.CommonName
+		}
 	}
 
 	subject := pkix.Name{ //Name代表一个X.509识别名。只包含识别名的公共属性，额外的属性被忽略。
